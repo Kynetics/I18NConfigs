@@ -97,23 +97,15 @@ public class ConfigMapBuilder {
             for(File f : fileSequences.currentLocaleSequence_2) {
                 cfg = cfg.withFallback(ConfigFactory.parseFile(f));
             }
-            rootConfig = rootConfig.withValue(key, cfg.root());
-            cfg = ConfigFactory.empty();
             for(File f : fileSequences.currentLocaleSequence_1) {
                 cfg = cfg.withFallback(ConfigFactory.parseFile(f));
             }
-            rootConfig = rootConfig.withValue(key, cfg.root());
-            cfg = ConfigFactory.empty();
             for(File f : fileSequences.defaultLocaleSequence_2) {
                 cfg = cfg.withFallback(ConfigFactory.parseFile(f));
             }
-            rootConfig = rootConfig.withValue(key, cfg.root());
-            cfg = ConfigFactory.empty();
             for(File f : fileSequences.defaultLocaleSequence_1) {
                 cfg = cfg.withFallback(ConfigFactory.parseFile(f));
             }
-            rootConfig = rootConfig.withValue(key, cfg.root());
-            cfg = ConfigFactory.empty();
             for(File f : fileSequences.defaultSequence) {
                 cfg = cfg.withFallback(ConfigFactory.parseFile(f));
             }
