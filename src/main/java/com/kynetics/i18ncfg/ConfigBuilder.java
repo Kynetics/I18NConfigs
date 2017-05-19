@@ -1,24 +1,24 @@
 /**
-* Copyright (c) 2016 Kynetics, LLC
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*/
+ * Copyright (c) 2016 Kynetics, LLC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 package com.kynetics.i18ncfg;
 
@@ -68,6 +68,12 @@ public class ConfigBuilder {
 
     public ConfigBuilder withLocale(Locale locale) {
         this.locale = locale;
+        return this;
+    }
+
+    public ConfigBuilder withFileFilter(final FileFilter fileFilter) {
+        requireArgument(fileFilter != null, "FileFilter must not be null");
+        this.fileFilter = new AndFileFilter(fileFilter, mandatoryFileFilter);
         return this;
     }
 
@@ -140,7 +146,7 @@ public class ConfigBuilder {
         }
     }
 
-    private static final FileFilter fileFilter = new FileFilter() {
+    private static final FileFilter mandatoryFileFilter = new FileFilter() {
 
         private final List<String> supportedFiletypes = Arrays.asList(".properties", ".json", ".conf");
 
@@ -174,7 +180,7 @@ public class ConfigBuilder {
         final Locale defaultLocale = Locale.getDefault();
         final boolean hasLocale = this.locale != null && !this.locale.equals(defaultLocale);
         for(File currentDir : fileHierarchy(this.profileDir, this.rootDir)) {
-            List<File> files = Arrays.asList(currentDir.listFiles(fileFilter));
+            List<File> files = Arrays.asList(currentDir.listFiles(this.fileFilter));
             Collections.sort(files);
             for(File currentFile : files) {
                 final String fileName = stripFiletypeSuffix(currentFile.getName());
@@ -256,6 +262,21 @@ public class ConfigBuilder {
         return rootConfig;
     }
 
+    private static class AndFileFilter implements FileFilter{
+        final private FileFilter first;
+        final private FileFilter second;
+
+        public AndFileFilter(FileFilter first, FileFilter second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        @Override
+        public boolean accept(File file) {
+            return first.accept(file) && second.accept(file);
+        }
+    }
+
     private File rootDir = null;
 
     private File profileDir = null;
@@ -263,5 +284,7 @@ public class ConfigBuilder {
     private File configFile = null;
 
     private Locale locale = null;
+
+    private FileFilter fileFilter = mandatoryFileFilter;
 
 }
