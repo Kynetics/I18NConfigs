@@ -29,9 +29,11 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Locale;
 
 public class ConfigBuilderTest {
 
@@ -213,7 +215,8 @@ public class ConfigBuilderTest {
                 "property3: property3 in root_it.conf file");
         final File rootConf_it_IT = newTextFileIn(parent, "root_it_IT.conf",
                 "property3: property3 in root_it_IT.conf file");
-        final Config cfg = ConfigBuilder.create().withRootDir(parent).withProfileDir(parent).build();
+        final Config cfg = ConfigBuilder.create().withRootDir(parent)
+                .withProfileDir(parent).withLocale(getLocale_it_IT()).build();
         Assert.assertNotNull(cfg.getConfig("root"));
         Assert.assertEquals("property1 in root.conf file", cfg.getString("root.property1"));
         Assert.assertEquals("property2 in root_it.conf file", cfg.getString("root.property2"));
@@ -230,7 +233,8 @@ public class ConfigBuilderTest {
         final File rootConf = newTextFileIn(child_1, "root.conf",
                 "property1: property1 in root.conf file in child_1 dir\n"+
                 "property2: property2 in root.conf file in child_1 dir");
-        final Config cfg = ConfigBuilder.create().withRootDir(parent).withProfileDir(child_1).build();
+        final Config cfg = ConfigBuilder.create().withRootDir(parent)
+                .withProfileDir(child_1).withLocale(getLocale_it_IT()).build();
         Assert.assertNotNull(cfg.getConfig("root"));
         Assert.assertEquals("property1 in root_it.conf file", cfg.getString("root.property1"));
         Assert.assertEquals("property2 in root.conf file in child_1 dir", cfg.getString("root.property2"));
@@ -273,12 +277,60 @@ public class ConfigBuilderTest {
         Assert.assertEquals(6, cfg.entrySet().size());
     }
 
+    @Test
+    public void testBuilding_with_mandatory_file_filter() throws IOException {
+        final File parent = tmp.newFolder("parent");
+        final File rootConf = newTextFileIn(parent, "root.conf",
+                "property1: property1 in root.conf file");
+        final File rootProp = newTextFileIn(parent, "root.properties",
+                "property2 = property2 in root.properties file");
+        final File fileYaml = newTextFileIn(parent, "file.yaml", "\"property3 in filtered file\"");
+
+        final Config cfg = ConfigBuilder.create().withRootDir(parent).withProfileDir(parent).build();
+        Assert.assertNotNull(cfg.getConfig("root"));
+        Assert.assertEquals("property1 in root.conf file", cfg.getString("root.property1"));
+        Assert.assertEquals("property2 in root.properties file", cfg.getString("root.property2"));
+        Assert.assertFalse("", cfg.hasPath("file"));
+        Assert.assertFalse("", cfg.hasPath("file.property3"));
+        Assert.assertEquals(2, cfg.entrySet().size());
+    }
+
+
+    @Test
+    public void testBuilding_with_file_filter() throws IOException {
+        final File parent = tmp.newFolder("parent");
+        final File rootConf = newTextFileIn(parent, "root.conf",
+                "property1: property1 in root.conf file");
+        final File notFilteredFile = newTextFileIn(parent, "notFilteredFile.properties",
+                "property2 = property2 in notFilteredFile.properties file");
+        final File rootYaml = newTextFileIn(parent, "root.yaml", "\"property3 in filtered file\"");
+        final File filteredFileProp = newTextFileIn(parent, "filteredFile.prop", "\"property3 in filtered file\"");
+        final FileFilter fileFilter = new FileFilter() {
+            @Override
+            public boolean accept(File file) {
+                return !file.getName().equals("filteredFile");
+            }
+        };
+        final Config cfg = ConfigBuilder.create().withRootDir(parent)
+                .withProfileDir(parent).withFileFilter(fileFilter).build();
+        Assert.assertNotNull(cfg.getConfig("root"));
+        Assert.assertEquals("property1 in root.conf file", cfg.getString("root.property1"));
+        Assert.assertFalse("", cfg.hasPath("filteredFileProp"));
+        Assert.assertTrue("", cfg.hasPath("notFilteredFile"));
+        Assert.assertEquals("property2 in notFilteredFile.properties file", cfg.getString("notFilteredFile.property2"));
+        Assert.assertEquals(2, cfg.entrySet().size());
+    }
+
     private File newTextFileIn(File folder, String fileName, String text) throws IOException {
         final File file = new File(folder, fileName);
         try(FileWriter w = new FileWriter(file)) {
             w.write(text);
         }
         return file;
+    }
+
+    private Locale getLocale_it_IT(){
+        return new Locale.Builder().setLanguage("it").setRegion("IT").build();
     }
 
 }
